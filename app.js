@@ -7,11 +7,39 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
+let room = ['room1', 'room2', 'room3'];
+let a =0;
+
 var app = express();
+app.io = require('socket.io')();
+
+app.io.on('connection',(socket)=>{
+  console.log('유저가 들어왔습니다.');
+
+  socket.on('joinRoom', (num, name)=>{
+    socket.join(room[num], () =>{
+      app.io.to(room[num]).emit('joinRoom', num, name);
+    });
+  });
+
+  socket.on('leaveRoom', (num,name)=>{
+    socket.leave(room[num], ()=>{
+      app.io.to(room[num]).emit('leaveRoom', num, name);
+    });
+  });
+
+  socket.on('disconnect', () =>{
+    console.log('유저가 나갔습니다.');
+  });
+
+  socket.on('chat-msg', (num, name, msg)=>{
+    app.io.to(room[a]).emit('chat-msg', name, msg);
+  });
+});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('view engine', 'ejs');
 
 app.use(logger('dev'));
 app.use(express.json());
